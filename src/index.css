@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-black text-white;
+}
+
+@layer utilities {
+  .clip-path-inward {
+    clip-path: ellipse(100% 30% at 50% 100%);
+  }
+}
+
+/* BG IMAGE FOR THE LANDIGN PAGE */
+.netflix-bg {
+  background-image: url('/hero.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-blend-mode: overlay;
+  background-color: #363636;
+  box-shadow: 60px 60px 60px 100px rgb(40, 22, 28)
+}
+
+.nav-home {
+  background: #0000009f;
+  position: sticky;
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.fade-in {
+  animation: fadeIn 1s ease-in-out;
+}

@@ -8,7 +8,6 @@ const LoginDiv = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -16,18 +15,24 @@ const LoginDiv = () => {
 
     if (signState === "Sign In") {
       const user = await signIn(email, password);
-      console.log(user);
-      toast.success("Sign in successfull.");
-      setName("");
-      setEmail("");
-      navigate("/");
+      if (user) {
+        toast.success("Sign in successful.");
+        setName("");
+        setEmail("");
+        setPassword("");
+        navigate("/");
+      }
+      // Errors are handled in signIn function
     } else {
-      await signUp(email, password);
-      toast.success("Account created! Log in now.");
-      setEmail("");
-      setPassword("");
-      setName("");
-      setSignState("Sign In");
+      const user = await signUp(name, email, password);
+      if (user) {
+        toast.success("Account created! Log in now.");
+        setEmail("");
+        setPassword("");
+        setName("");
+        setSignState("Sign In");
+      }
+      // Errors are handled in signUp function
     }
   };
 
@@ -77,8 +82,8 @@ const LoginDiv = () => {
           <div className="flex justify-between mb-6">
             <div>
               <input type="checkbox" />
-              Remember Me
-            </div>{" "}
+              {" "}Remember Me
+            </div>
             <p>Need Help?</p>
           </div>
           {signState === "Sign In" ? (

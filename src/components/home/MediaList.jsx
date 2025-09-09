@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from "react";
 import MediaDiv from "./MediaDiv";
+import MoviePopup from "../MoviePopup"; // adjust path if needed
 
 const TMDB_API_KEY = "23de376c429b57034682aa132f4da2cd";
 
@@ -25,7 +26,8 @@ const mediaEndpoints = [
 const MediaList = () => {
   const scrollRefs = useRef([]);
   const [mediaData, setMediaData] = useState([[], [], [], []]);
-  const [cardWidth, setCardWidth] = useState(220); // Adjust based on your actual card width+gap
+  const [cardWidth] = useState(220);
+  const [selectedMovie, setSelectedMovie] = useState(null);
 
   useEffect(() => {
     mediaEndpoints.forEach((endpoint, idx) => {
@@ -42,36 +44,27 @@ const MediaList = () => {
     });
   }, []);
 
-  // Arrows: always smooth, always circular, always works
   const handleArrowClick = (idx, direction) => {
     const container = scrollRefs.current[idx];
     const itemCount = mediaData[idx].length;
     if (!container || itemCount === 0) return;
-
-    // Calculate visible items (roughly)
     const visibleCards = Math.floor(container.clientWidth / cardWidth) || 1;
     const scrollAmount = visibleCards * cardWidth;
     let nextScrollLeft;
 
     if (direction === "right") {
-      // If at (or very near) the end, go back to the start
-      if (
-        container.scrollLeft + container.clientWidth >=
-        container.scrollWidth - cardWidth
-      ) {
+      if (container.scrollLeft + container.clientWidth >= container.scrollWidth - cardWidth) {
         nextScrollLeft = 0;
       } else {
         nextScrollLeft = container.scrollLeft + scrollAmount;
       }
     } else {
-      // If at or near start, jump to end
       if (container.scrollLeft <= 0) {
         nextScrollLeft = container.scrollWidth - container.clientWidth;
       } else {
         nextScrollLeft = container.scrollLeft - scrollAmount;
       }
     }
-
     container.scrollTo({ left: nextScrollLeft, behavior: "smooth" });
   };
 
@@ -84,7 +77,6 @@ const MediaList = () => {
           style={{ marginBottom: "35px" }}
         >
           <h1 className="text-3xl font-semibold mt-2 mb-1">{section.heading}</h1>
-          {/* LEFT ARROW */}
           <button
             onClick={() => handleArrowClick(idx, "left")}
             className="absolute left-2 top-1/2 z-10 -translate-y-1/2 bg-black/80 text-white rounded-full p-2"
@@ -93,7 +85,6 @@ const MediaList = () => {
           >
             &#8592;
           </button>
-          {/* Movie Row */}
           <div
             ref={(el) => (scrollRefs.current[idx] = el)}
             className="flex gap-3 overflow-x-auto scroll-smooth no-scrollbar"
@@ -111,11 +102,11 @@ const MediaList = () => {
                 key={item.id || i}
                 img={item.backdrop_path}
                 name={item.original_title || item.original_name}
-                id={item.id}
+                movie={item}
+                onSelect={setSelectedMovie}
               />
             ))}
           </div>
-          {/* RIGHT ARROW */}
           <button
             onClick={() => handleArrowClick(idx, "right")}
             className="absolute right-2 top-1/2 z-10 -translate-y-1/2 bg-black/80 text-white rounded-full p-2"
@@ -126,6 +117,10 @@ const MediaList = () => {
           </button>
         </div>
       ))}
+      {/* Movie Popup */}
+      {selectedMovie && (
+        <MoviePopup movie={selectedMovie} onClose={() => setSelectedMovie(null)} />
+      )}
     </div>
   );
 };

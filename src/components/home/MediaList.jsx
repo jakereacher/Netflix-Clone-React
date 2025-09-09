@@ -1,109 +1,129 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import MediaDiv from "./MediaDiv";
+
+const TMDB_API_KEY = "23de376c429b57034682aa132f4da2cd";
+
+const mediaEndpoints = [
+  {
+    heading: "Popular Movies",
+    url: `https://api.themoviedb.org/3/movie/popular?api_key=${TMDB_API_KEY}&language=en-US&page=1`,
+  },
+  {
+    heading: "Top Trending",
+    url: `https://api.themoviedb.org/3/movie/top_rated?api_key=${TMDB_API_KEY}&language=en-US&page=1`,
+  },
+  {
+    heading: "Horror Movies",
+    url: `https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_API_KEY}&with_genres=27&page=1`,
+  },
+  {
+    heading: "Series",
+    url: `https://api.themoviedb.org/3/tv/top_rated?api_key=${TMDB_API_KEY}&page=1`,
+  },
+];
 
 const MediaList = () => {
   const scrollRefs = useRef([]);
-  const [popularMovie, setPopularMovie] = useState([]);
-  const [topRated, setTopRated] = useState([]);
-  const [series, setSeries] = useState([]);
-  const [horrorMovie, setHorrorMovie] = useState([]);
-
-  const mediaSections = [
-    { heading: "Popular Movies", data: popularMovie },
-    { heading: "Top Trending", data: topRated },
-    { heading: "Horror Movies", data: horrorMovie },
-    { heading: "Series", data: series },
-  ];
-
-  const handleWheel = (event, ref) => {
-    event.preventDefault();
-    if (ref.current) {
-      ref.current.scrollLeft += event.deltaY;
-    }
-  };
+  const [mediaData, setMediaData] = useState([[], [], [], []]);
+  const [cardWidth, setCardWidth] = useState(220); // Adjust based on your actual card width+gap
 
   useEffect(() => {
-    scrollRefs.current.forEach((ref) => {
-      if (ref) {
-        const handler = (e) => handleWheel(e, { current: ref });
-        ref.addEventListener("wheel", handler, { passive: false });
-        return () => ref.removeEventListener("wheel", handler);
-      }
+    mediaEndpoints.forEach((endpoint, idx) => {
+      fetch(endpoint.url)
+        .then((res) => res.json())
+        .then((res) => {
+          setMediaData((prev) => {
+            const newData = [...prev];
+            newData[idx] = res.results || [];
+            return newData;
+          });
+        })
+        .catch((err) => console.error(err));
     });
   }, []);
 
-  const options = {
-    method: "GET",
-    headers: {
-      accept: "application/json",
-      Authorization:
-        "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJjOTVlZjBhMzkwNmJlNGQxMWZiZjVmNWIxYzBkOWJlOSIsIm5iZiI6MTc0NTUwMjY0Ni43NTAwMDAyLCJzdWIiOiI2ODBhNDFiNjE0MmIwOWNlY2Y4YTQ2YmYiLCJzY29wZXMiOlsiYXBpX3JlYWQiXSwidmVyc2lvbiI6MX0.LwG5-ScDmC5w2SfYAdA2RKvip3YRbSa5x4Rdt_KGdug",
-    },
+  // Arrows: always smooth, always circular, always works
+  const handleArrowClick = (idx, direction) => {
+    const container = scrollRefs.current[idx];
+    const itemCount = mediaData[idx].length;
+    if (!container || itemCount === 0) return;
+
+    // Calculate visible items (roughly)
+    const visibleCards = Math.floor(container.clientWidth / cardWidth) || 1;
+    const scrollAmount = visibleCards * cardWidth;
+    let nextScrollLeft;
+
+    if (direction === "right") {
+      // If at (or very near) the end, go back to the start
+      if (
+        container.scrollLeft + container.clientWidth >=
+        container.scrollWidth - cardWidth
+      ) {
+        nextScrollLeft = 0;
+      } else {
+        nextScrollLeft = container.scrollLeft + scrollAmount;
+      }
+    } else {
+      // If at or near start, jump to end
+      if (container.scrollLeft <= 0) {
+        nextScrollLeft = container.scrollWidth - container.clientWidth;
+      } else {
+        nextScrollLeft = container.scrollLeft - scrollAmount;
+      }
+    }
+
+    container.scrollTo({ left: nextScrollLeft, behavior: "smooth" });
   };
-
-  useEffect(() => {
-    fetch(
-      "https://api.themoviedb.org/3/movie/popular?language=en-US&page=1",
-      options
-    )
-      .then((res) => res.json())
-      .then((res) => {
-        console.log("Popular Movies:", res.results);
-        setPopularMovie(res.results);
-      })
-      .catch((err) => console.error(err));
-    fetch(
-      "https://api.themoviedb.org/3/movie/top_rated?language=en-US&page=1",
-      options
-    )
-      .then((res) => res.json())
-      .then((res) => {
-        console.log("Top Trending:", res.results);
-        setTopRated(res.results);
-      })
-      .catch((err) => console.error(err));
-    fetch(
-      "https://api.themoviedb.org/3/discover/movie?with_genres=27&page=1",
-      options
-    )
-      .then((res) => res.json())
-      .then((res) => setHorrorMovie(res.results))
-      .catch((err) => console.error("Error fetching data:", err));
-
-    fetch("https://api.themoviedb.org/3/tv/top_rated?page=1", options)
-      .then((res) => res.json())
-      .then((res) => {
-        console.log("Seies:", res.results);
-        setSeries(res.results);
-      })
-      .catch((err) => console.error(err));
-  }, []);
 
   return (
     <div className="relative -mt-56 z-50">
-      {mediaSections.map((section, index) => (
-        <div key={index} className="px-16">
-          <h1 className="text-3xl font-semibold mt-2 mb-1">
-            {section.heading}
-          </h1>
+      {mediaEndpoints.map((section, idx) => (
+        <div
+          key={idx}
+          className="px-16 relative"
+          style={{ marginBottom: "35px" }}
+        >
+          <h1 className="text-3xl font-semibold mt-2 mb-1">{section.heading}</h1>
+          {/* LEFT ARROW */}
+          <button
+            onClick={() => handleArrowClick(idx, "left")}
+            className="absolute left-2 top-1/2 z-10 -translate-y-1/2 bg-black/80 text-white rounded-full p-2"
+            style={{ fontSize: "2rem", pointerEvents: "all" }}
+            aria-label="Scroll Left"
+          >
+            &#8592;
+          </button>
+          {/* Movie Row */}
           <div
-            ref={(el) => (scrollRefs.current[index] = el)}
-            className="flex gap-3 overflow-x-auto"
+            ref={(el) => (scrollRefs.current[idx] = el)}
+            className="flex gap-3 overflow-x-auto scroll-smooth no-scrollbar"
             style={{
               overflowX: "scroll",
               scrollbarWidth: "none",
               msOverflowStyle: "none",
+              scrollBehavior: "smooth",
+              scrollSnapType: "x mandatory",
+              minHeight: "12rem",
             }}
           >
-            {section.data.map((item, i) => (
+            {mediaData[idx].map((item, i) => (
               <MediaDiv
-                key={i}
+                key={item.id || i}
                 img={item.backdrop_path}
                 name={item.original_title || item.original_name}
                 id={item.id}
               />
             ))}
           </div>
+          {/* RIGHT ARROW */}
+          <button
+            onClick={() => handleArrowClick(idx, "right")}
+            className="absolute right-2 top-1/2 z-10 -translate-y-1/2 bg-black/80 text-white rounded-full p-2"
+            style={{ fontSize: "2rem", pointerEvents: "all" }}
+            aria-label="Scroll Right"
+          >
+            &#8594;
+          </button>
         </div>
       ))}
     </div>
